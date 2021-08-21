@@ -21,7 +21,12 @@ from homeassistant.exceptions import (
 )
 from homeassistant.helpers import device_registry, entity_registry
 from homeassistant.helpers.event import Event
-from homeassistant.helpers.typing import UNDEFINED, DiscoveryInfoType, UndefinedType
+from homeassistant.helpers.typing import (
+    UNDEFINED,
+    ConfigType,
+    DiscoveryInfoType,
+    UndefinedType,
+)
 from homeassistant.setup import async_process_deps_reqs, async_setup_component
 from homeassistant.util.decorator import Registry
 import homeassistant.util.uuid as uuid_util
@@ -35,6 +40,7 @@ SOURCE_IMPORT = "import"
 SOURCE_INTEGRATION_DISCOVERY = "integration_discovery"
 SOURCE_MQTT = "mqtt"
 SOURCE_SSDP = "ssdp"
+SOURCE_USB = "usb"
 SOURCE_USER = "user"
 SOURCE_ZEROCONF = "zeroconf"
 SOURCE_DHCP = "dhcp"
@@ -98,7 +104,12 @@ DEFAULT_DISCOVERY_UNIQUE_ID = "default_discovery_unique_id"
 DISCOVERY_NOTIFICATION_ID = "config_entry_discovery"
 DISCOVERY_SOURCES = (
     SOURCE_SSDP,
+    SOURCE_USB,
+    SOURCE_DHCP,
+    SOURCE_HOMEKIT,
     SOURCE_ZEROCONF,
+    SOURCE_HOMEKIT,
+    SOURCE_DHCP,
     SOURCE_DISCOVERY,
     SOURCE_IMPORT,
     SOURCE_UNIGNORE,
@@ -598,7 +609,10 @@ class ConfigEntriesFlowManager(data_entry_flow.FlowManager):
     """Manage all the config entry flows that are in progress."""
 
     def __init__(
-        self, hass: HomeAssistant, config_entries: ConfigEntries, hass_config: dict
+        self,
+        hass: HomeAssistant,
+        config_entries: ConfigEntries,
+        hass_config: ConfigType,
     ) -> None:
         """Initialize the config entry flow manager."""
         super().__init__(hass)
@@ -748,7 +762,7 @@ class ConfigEntries:
     An instance of this object is available via `hass.config_entries`.
     """
 
-    def __init__(self, hass: HomeAssistant, hass_config: dict) -> None:
+    def __init__(self, hass: HomeAssistant, hass_config: ConfigType) -> None:
         """Initialize the entry manager."""
         self.hass = hass
         self.flow = ConfigEntriesFlowManager(hass, self, hass_config)
@@ -1360,6 +1374,12 @@ class ConfigFlow(data_entry_flow.FlowHandler):
         self, discovery_info: DiscoveryInfoType
     ) -> data_entry_flow.FlowResult:
         """Handle a flow initialized by DHCP discovery."""
+        return await self.async_step_discovery(discovery_info)
+
+    async def async_step_usb(
+        self, discovery_info: DiscoveryInfoType
+    ) -> data_entry_flow.FlowResult:
+        """Handle a flow initialized by USB discovery."""
         return await self.async_step_discovery(discovery_info)
 
     @callback
